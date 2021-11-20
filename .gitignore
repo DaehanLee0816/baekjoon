@@ -1,0 +1,5 @@
+# ignore executor file
+*.exe
+
+# ignore VScode
+.vscode
