@@ -1,109 +1,78 @@
 #include <iostream>
 #include <vector>
-#include <queue>
-
-std::vector<int> DFS(std::vector<std::vector<int>> &map, std::queue<int> &sum_q,
-         std::queue<std::vector<int>> &pos_q, int size, int tot_sum, int &ret) {
-
-    int sum = sum_q.front();
-    std::vector<int> pos = pos_q.front();
-    if (pos.size() == size-1) {
-        std::vector<int> ret_pos;
-
-        int temp_ret = (tot_sum/2 - sum)*(sum - tot_sum/2);
-        if (temp_ret == 0) {
-            ret = 0;
-            return pos;
-        }
-        
-        if ((tot_sum/2 - sum) >= 0) {
-            ret = tot_sum/2 - sum;
-        } else {
-            ret = sum - tot_sum/2;
-        }
-        
-        for (int i = 0; i < pos.size(); i++) {
-            ret_pos.push_back(pos[i]);
-        }
-        sum_q.pop();
-        pos_q.pop();
-        
-        while (!sum_q.empty()) {
-            
-            int next_sum = sum_q.front();
-            std::vector<int> next_pos = pos_q.front();
-            int next_temp_ret = (tot_sum/2 - next_sum)*(next_sum - tot_sum/2);
-            if (next_temp_ret < temp_ret) {
-                if ((tot_sum/2 - sum) >= 0) {
-                    ret = tot_sum/2 - next_sum;
-                } else {
-                    ret = next_sum - tot_sum/2;
-                }
-                
-                ret_pos.clear();
-                for (int i = 0; i < next_pos.size(); i++) {
-                    ret_pos.push_back(next_pos[i]);
-                }
-            }
-            sum_q.pop();
-            pos_q.pop();
-        }
-        return ret_pos;
-    }
-    
-    int temp_size = pos.size();
-    while (temp_size == pos_q.front().size()) {
-        for (int i = pos.back(); i < size; i++) {
-            std::vector<int> next_vec(pos);
-            int temp_sum = sum;
-            int prev_pos = pos.back();
-            temp_sum += map[size - i -1][pos_q.front().size()];
-            next_vec.push_back(i);
-
-            sum_q.push(temp_sum);
-            pos_q.push(next_vec);
-            sum_q.pop();
-            pos_q.pop();
-        }
-    }
-}
 
 int main()
 {
     int size;
-    int tot = 0;
-    std::vector<std::vector<int>> map;
-    std::vector<int> ret_pos;
-    std::vector<int> sum;
-    int ret = 0;
-    std::queue<std::vector<int>> pos_q;
-    std::queue<int> sum_q;
+    scanf("%d", &size);
+    int map[21][21];
+    int sum_map[21][21] = {0};
+    int height[21];
+    int ret[21] = {0};
+    int DP[21][21][40000] = {-1, };
+    int sum = 0;
+    int ret_diff;
+
+    printf("%d", size);
     
-    for (int i = 0; i < size; i++) {
-        std::vector<int> i_th_row;
-        for (int j = 0; j < size; j++) {
-            int elem;
-            std::cin >> elem;
-            tot += elem;
-            i_th_row.push_back(elem);
+    for (int y = size; y >= 1; y--) {
+        for (int x = 1; x <= size; x++) {
+            scanf("%d", &map[x][y]);
+            sum += map[x][y];
         }
-        map.push_back(i_th_row);
+    }
+
+    for (int x = 1; x <=size; x++) {
+        for (int y = 1; y <= size; y++) {
+            sum_map[x][y] += (sum_map[x][y-1] + map[x][y]);
+        }
+    }
+
+    for (int y = 0; y <= size; y++) {
+        DP[1][y][sum_map[1][y]] = std::abs(sum - 2*sum_map[1][y]);
+    }
+
+    for (int x = 1; x < size; x++) {
+        for (int y = 0; y <= size; y++) {
+            int min = INT32_MAX;
+            for (int i = y; i <=size; i++) {
+                for (int temp_sum = 0; temp_sum < size*size*100; temp_sum++) {
+                    if (DP[x][i][temp_sum] == -1)
+                        continue;
+                    
+                    DP[x+1][i][temp_sum + sum_map[x+1][i]] = std::abs(sum - 2*(temp_sum + sum_map[x+1][i]));
+                }
+            }
+        }
+    }
+
+    int min = INT32_MAX;
+    int prev_sum;
+    for (int i = 1; i <= size; i++) {
+        for (int j = 0; j <= 100*size*size; j++) {
+            if (min > DP[size][i][j]) {
+                min = DP[size][i][j];
+                ret[size] = i;
+                prev_sum = j;
+                ret_diff = DP[size][i][j];
+            }
+        }
     }
     
-    for (int i = 0; i < size; i++) {
-        std::vector<int> init;
-        int sum = map[i][0];
-        init.push_back(i+1);
-        pos_q.push(init);
-        sum_q.push(sum);
+    for (int i = size - 1; i >= 1; i++) {
+        for (int j = 1; j <= size; j++) {
+            if (DP[i][j][prev_sum - sum_map[i][ret[i+1]]] != -1) {
+                ret[i] = j;
+                prev_sum -= sum_map[i][ret[i+1]];
+            }
+        }
     }
+
+    printf("%d\n", ret_diff);
     
-    ret_pos = DFS(map, sum_q, pos_q, size, tot, ret);
-    
-    std::cout << ret << std::endl;
-    for (int i = 0; i < size; i++) {
-        std::cout << ret_pos[i];
+    for (int i = 1; i < size; i++) {
+        printf("%d ",ret[i]);
     }
-    
+    printf("%d", ret[size]);
     return 0;
 }
